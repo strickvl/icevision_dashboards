@@ -88,10 +88,9 @@ class RangeFilter(Filter):
     def update_with_mask(self, mask: np.ndarray) -> None:
         if self.hist is None:
             return
-        else:
-            selection = self.data[np.logical_and(self.get_selection(), mask)]
-            self.hist = histogram(selection, bins=self.bins, range=(self.data.min(), self.data.max()), height=100, width=self.width, remove_tools=True)
-            self.gui[1] = self.hist
+        selection = self.data[np.logical_and(self.get_selection(), mask)]
+        self.hist = histogram(selection, bins=self.bins, range=(self.data.min(), self.data.max()), height=100, width=self.width, remove_tools=True)
+        self.gui[1] = self.hist
 
     def register_callback(self, callback):
         callback = self.mask_callback(callback)
@@ -126,7 +125,9 @@ class CategoricalFilter(Filter):
 
     def update_with_mask(self, mask: np.ndarray, disabel_callbacks=True):
         """This does not work yet, maybe the whole structure needs to be changed to be based on the param lib."""
-        self.selector.value = list(set([element for element, mask_value in zip(self.data, mask) if mask_value]))
+        self.selector.value = list(
+            {element for element, mask_value in zip(self.data, mask) if mask_value}
+        )
 
 # Cell
 class TimeFilter(Filter):
@@ -179,8 +180,7 @@ class ScatterFilter(Filter):
 
     def get_selection(self):
         selected_indices = self.source.selected.indices
-        selection = [False if i not in selected_indices else True for i in range(len(self.data[0]))]
-        return selection
+        return [i in selected_indices for i in range(len(self.data[0]))]
 
     def mask_callback(self, callback):
         def new_callback(attr, new, old):
@@ -207,9 +207,19 @@ class GenericMulitScatterFilter(Filter):
         super().__init__(data, width, height)
 
     def update_selection(self, attr, old, new):
-        self.selections[self.x_select.value][self.y_select.value] = [True if index in new else False for index in range(len(self.selections[self.x_select.value][self.y_select.value]))]
+        self.selections[self.x_select.value][self.y_select.value] = [
+            index in new
+            for index in range(
+                len(self.selections[self.x_select.value][self.y_select.value])
+            )
+        ]
         if self.mode == "symmetric":
-            self.selections[self.y_select.value][self.x_select.value] = [True if index in new else False for index in range(len(self.selections[self.x_select.value][self.y_select.value]))]
+            self.selections[self.y_select.value][self.x_select.value] = [
+                index in new
+                for index in range(
+                    len(self.selections[self.x_select.value][self.y_select.value])
+                )
+            ]
         self.source.data["colors"] = self.get_colors()
 
     def update_plot(self, event):
@@ -243,7 +253,7 @@ class GenericMulitScatterFilter(Filter):
             # put all singel selections into one list so they can be iterated over with zip
             if "Ignore empty selections" in self.ignore_empty_selections.value:
                 single_selections = [selection for layer_1 in self.selections.values() for selection in layer_1.values() if any(selection)]
-                if len(single_selections) == 0:
+                if not single_selections:
                     single_selections = [selection for selection in single_selections if any(selection)]
             else:
                 single_selections = [selection for layer_1 in self.selections.values() for selection in layer_1.values()]
@@ -273,11 +283,11 @@ class GenericMulitScatterFilter(Filter):
 
     def get_selection(self):
         if self.combine_selections.value == "None":
-            selection = [value for value in self.selections[self.x_select.value][self.y_select.value]]
+            selection = list(self.selections[self.x_select.value][self.y_select.value])
         else:
             if "Ignore empty selections" in self.ignore_empty_selections.value:
                 single_selections = [selection for layer_1 in self.selections.values() for selection in layer_1.values() if any(selection)]
-                if len(single_selections) == 0:
+                if not single_selections:
                     single_selections = [selection for selection in single_selections if any(selection)]
             else:
                 single_selections = [selection for layer_1 in self.selections.values() for selection in layer_1.values()]

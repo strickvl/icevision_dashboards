@@ -41,8 +41,7 @@ class ObservableList(Observable):
         return self._list.__repr__()
 
     def __iter__(self):
-        for item in self._list:
-            yield item
+        yield from self._list
 
     def __len__(self):
         return len(self._list)
@@ -105,7 +104,7 @@ class DatasetDescriptor(ABC):
     """
     def __set_name__(self, owner, name):
         owner._descriptors.append(self)
-        self.private_name = '_' + name
+        self.private_name = f'_{name}'
 
     def __get__(self, obj, objtype=None):
         "Attribute will be recomputed if it is None else the befor computed version will be returned."
@@ -129,7 +128,7 @@ class DatasetDescriptor(ABC):
 class StringDescriptor:
     """Descriptor for strings"""
     def __set_name__(self, owner, name):
-        self.private_name = '_' + name
+        self.private_name = f'_{name}'
 
     def __get__(self, obj, objtype=None):
         return getattr(obj, self.private_name)

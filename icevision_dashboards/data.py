@@ -82,7 +82,7 @@ class RecordDataset(GenericDataset, ABC):
         base_string = ""
         if getattr(self, "stats_dataset", None) is not None:
             for col in self.stats_dataset.columns:
-                base_string += str(col) + ": " + str(self.stats_dataset[col][0]) + " | "
+                base_string += f"{str(col)}: {str(self.stats_dataset[col][0])} | "
             base_string = base_string[:-2]
         return base_string
 
@@ -234,13 +234,43 @@ class DataDescriptorBbox(DatasetDescriptor):
                 bbox_ratio = bbox_width / bbox_height
                 data.append(
                     {
-                        "id": record_commons["record_id"], "width": record.width, "height": record.height, "label": label, "area_square_root": bbox["bbox_sqrt_area"], "area_square_root_normalized": area_normalized**0.5,
-                        "bbox_xmin": bbox["bbox_x"], "bbox_xmax": bbox["bbox_x"]+bbox["bbox_width"], "bbox_ymin": bbox["bbox_y"], "bbox_ymax": bbox["bbox_y"]+bbox["bbox_height"],
-                        "bbox_xmin_normalized": bbox["bbox_x"]/record.width, "bbox_xmax_normalized": (bbox["bbox_x"]+bbox["bbox_width"])/record.width, "bbox_ymin_normalized": bbox["bbox_y"]/record.height,
-                        "bbox_ymax_normalized": (bbox["bbox_y"]+bbox["bbox_height"])/record.height, "area": area, "area_normalized": area_normalized, "bbox_ratio": bbox_ratio, "bbox_ratio_normalized": bbox_ratio*(record.height/record.width),
-                        "record_index": index, "bbox_width": bbox_width, "bbox_height": bbox_height, "bbox_width_normalized": bbox_width/record.width, "bbox_height_normalized": bbox_height/record.height,
-                        "filepath": str(record.filepath), "creation_date": datetime.datetime.fromtimestamp(file_stats.st_ctime), "class_map": json.dumps(record.detection.class_map._id2class),
-                        "modification_date": datetime.datetime.fromtimestamp(file_stats.st_mtime), "num_annotations": len(record_detections["bboxes"])
+                        "id": record_commons["record_id"],
+                        "width": record.width,
+                        "height": record.height,
+                        "label": label,
+                        "area_square_root": bbox["bbox_sqrt_area"],
+                        "area_square_root_normalized": area_normalized**0.5,
+                        "bbox_xmin": bbox["bbox_x"],
+                        "bbox_xmax": bbox["bbox_x"] + bbox_width,
+                        "bbox_ymin": bbox["bbox_y"],
+                        "bbox_ymax": bbox["bbox_y"] + bbox_height,
+                        "bbox_xmin_normalized": bbox["bbox_x"] / record.width,
+                        "bbox_xmax_normalized": (bbox["bbox_x"] + bbox_width)
+                        / record.width,
+                        "bbox_ymin_normalized": bbox["bbox_y"] / record.height,
+                        "bbox_ymax_normalized": (bbox["bbox_y"] + bbox_height)
+                        / record.height,
+                        "area": area,
+                        "area_normalized": area_normalized,
+                        "bbox_ratio": bbox_ratio,
+                        "bbox_ratio_normalized": bbox_ratio
+                        * (record.height / record.width),
+                        "record_index": index,
+                        "bbox_width": bbox_width,
+                        "bbox_height": bbox_height,
+                        "bbox_width_normalized": bbox_width / record.width,
+                        "bbox_height_normalized": bbox_height / record.height,
+                        "filepath": str(record.filepath),
+                        "creation_date": datetime.datetime.fromtimestamp(
+                            file_stats.st_ctime
+                        ),
+                        "class_map": json.dumps(
+                            record.detection.class_map._id2class
+                        ),
+                        "modification_date": datetime.datetime.fromtimestamp(
+                            file_stats.st_mtime
+                        ),
+                        "num_annotations": len(record_detections["bboxes"]),
                     }
                 )
         data = pd.DataFrame(data)
@@ -252,8 +282,7 @@ class DataDescriptorBbox(DatasetDescriptor):
 # Cell
 class StatsDescriptorBbox(DatasetDescriptor):
     def calculate_description(self, obj):
-        stats_dict = {}
-        stats_dict["no_imgs"] = [obj.data["filepath"].nunique()]
+        stats_dict = {"no_imgs": [obj.data["filepath"].nunique()]}
         stats_dict["no_classes"] = [obj.data["label"].nunique()]
         stats_dict["classes"] = [list(obj.data["label"].unique())]
         stats_dict["area_min"] = [obj.data["area"].min()]
@@ -268,13 +297,11 @@ class StatsDescriptorBbox(DatasetDescriptor):
 class ImageStatsDescriptorBbox(DatasetDescriptor):
     def calculate_description(self, obj):
         """Creates a dataframe containing stats about the images."""
-        stats_dict = {}
-        stats_dict["Num. imgs."] = obj.data["filepath"].nunique()
+        stats_dict = {"Num. imgs.": obj.data["filepath"].nunique()}
         stats_dict["Min Num. Objects"] = obj.data["num_annotations"].min()
         stats_dict["Max Num. Objects"] = obj.data["num_annotations"].max()
         stats_dict["Avg. Objects/Img"] = round(obj.data["num_annotations"].mean(),2)
-        df = pd.DataFrame.from_dict(stats_dict, orient="index").T
-        return df
+        return pd.DataFrame.from_dict(stats_dict, orient="index").T
 
 # Cell
 class ClassStatsDescriptorBbox(DatasetDescriptor):
@@ -283,9 +310,7 @@ class ClassStatsDescriptorBbox(DatasetDescriptor):
         stats_dict = {}
         label_group = obj.data.groupby("label")
         for label, group in label_group:
-            label_stats = {}
-            label_stats["imgs"] = group["filepath"].nunique()
-            label_stats["objects"] = group.shape[0]
+            label_stats = {"imgs": group["filepath"].nunique(), "objects": group.shape[0]}
             label_stats["avg_objects_per_img"] = label_stats["objects"]/label_stats["imgs"]
             label_stats["frac_of_labels"] = round(label_stats["objects"]/obj.data.shape[0], 2)
             stats_dict[label] = label_stats
@@ -297,8 +322,23 @@ class ClassStatsDescriptorBbox(DatasetDescriptor):
 class GalleryStatsDescriptorBbox(DatasetDescriptor):
     def calculate_description(self, obj):
         """Creates a dataframe containing the data for a gallery."""
-        df = obj.data[["id", "area", "num_annotations", "label", "bbox_ratio", "bbox_width", "bbox_height", "width", "height"]].drop_duplicates().reset_index(drop=True)
-        return df
+        return (
+            obj.data[
+                [
+                    "id",
+                    "area",
+                    "num_annotations",
+                    "label",
+                    "bbox_ratio",
+                    "bbox_width",
+                    "bbox_height",
+                    "width",
+                    "height",
+                ]
+            ]
+            .drop_duplicates()
+            .reset_index(drop=True)
+        )
 
 # Cell
 class BboxRecordDataset(RecordDataset):
@@ -330,10 +370,7 @@ class BboxRecordDataset(RecordDataset):
 # Cell
 class PrecisionRecallMetricsDescriptorObjectDetection(DatasetDescriptor):
     def __init__(self, ious=None):
-        if ious is None:
-            self.ious = np.arange(0.5, 1, 0.05).round(2)
-        else:
-            self.ious = ious
+        self.ious = np.arange(0.5, 1, 0.05).round(2) if ious is None else ious
 
     def calculate_description(self, obj):
         return APObjectDetection(obj.base_data, self.ious).metric_data
@@ -486,8 +523,7 @@ class DataDescriptorInstanceSegmentation(DatasetDescriptor):
 # Cell
 class StatsDescriptorInstanceSegmentation(DatasetDescriptor):
     def calculate_description(self, obj):
-        stats_dict = {}
-        stats_dict["no_imgs"] = [obj.data["filepath"].nunique()]
+        stats_dict = {"no_imgs": [obj.data["filepath"].nunique()]}
         stats_dict["no_classes"] = [obj.data["label"].nunique()]
         stats_dict["classes"] = [list(obj.data["label"].unique())]
         stats_dict["mask_area_min"] = [obj.data["mask_area"].min()]
@@ -509,9 +545,7 @@ class ClassStatsDescriptorInstanceSegmentation(ClassStatsDescriptorBbox):
         stats_dict = {}
         label_group = obj.data.groupby("label")
         for label, group in label_group:
-            label_stats = {}
-            label_stats["imgs"] = group["filepath"].nunique()
-            label_stats["objects"] = group.shape[0]
+            label_stats = {"imgs": group["filepath"].nunique(), "objects": group.shape[0]}
             label_stats["avg_objects_per_img"] = label_stats["objects"]/label_stats["imgs"]
             label_stats["frac_of_labels"] = round(label_stats["objects"]/obj.data.shape[0], 2)
             stats_dict[label] = label_stats
@@ -523,8 +557,25 @@ class ClassStatsDescriptorInstanceSegmentation(ClassStatsDescriptorBbox):
 class GalleryStatsDescriptorInstanceSegmentation(DatasetDescriptor):
     def calculate_description(self, obj):
         """Creates a dataframe containing the data for a gallery."""
-        df = obj.data[["id", "bbox_area", "num_annotations", "label", "bbox_ratio", "bbox_width", "bbox_height", "mask_area", "mask_area_normalized", "width", "height"]].drop_duplicates().reset_index(drop=True)
-        return df
+        return (
+            obj.data[
+                [
+                    "id",
+                    "bbox_area",
+                    "num_annotations",
+                    "label",
+                    "bbox_ratio",
+                    "bbox_width",
+                    "bbox_height",
+                    "mask_area",
+                    "mask_area_normalized",
+                    "width",
+                    "height",
+                ]
+            ]
+            .drop_duplicates()
+            .reset_index(drop=True)
+        )
 
 # Cell
 class InstanceSegmentationRecordDataset(RecordDataset):
@@ -556,10 +607,7 @@ class InstanceSegmentationRecordDataset(RecordDataset):
 # Cell
 class PrecisionRecallMetricsDescriptorInstanceSegmentation(DatasetDescriptor):
     def __init__(self, ious=None):
-        if ious is None:
-            self.ious = np.arange(0.5, 1, 0.05).round(2)
-        else:
-            self.ious = ious
+        self.ious = np.arange(0.5, 1, 0.05).round(2) if ious is None else ious
 
     def calculate_description(self, obj):
         return APInstanceSegmentation(obj.base_data, self.ious).metric_data

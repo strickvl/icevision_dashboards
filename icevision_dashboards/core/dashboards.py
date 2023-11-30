@@ -64,7 +64,7 @@ class BaseGallery(Dashboard, ABC):
         self.btn_prev = pnw.Button(name="<", width=int(2*self.width/6))
         self.btn_next = pnw.Button(name=">", width=int(2*self.width/6))
         self.current = pnw.TextInput(value="1", width=int(self.width/6))
-        self.image_count = pn.Row("/" + str(self.num_entries), width=int(self.width/6))
+        self.image_count = pn.Row(f"/{str(self.num_entries)}", width=int(self.width/6))
         self.gui_image_selection_controlls = pn.Row(self.btn_prev, self.current, self.image_count, self.btn_next, align="center", height=50)
 
         if self.sort_cols is not None:
@@ -155,12 +155,12 @@ class RecordDastasetGallery(BaseGallery):
 
     def update_sorting(self, event):
         """Calculates the new index order for sorting."""
-        sort_ascending = False if  "Desc." in self.sort_order.value else True
+        sort_ascending = "Desc." not in self.sort_order.value
         data = getattr(self.data, self.gallery_desciptor).sort_values(self.sorter.value, ascending=sort_ascending)
         if "Drop duplicates" in self.sort_order.value:
             data = data.drop_duplicates(self.img_id_col)
         self.num_entries = data.shape[0]
-        self.image_count = pn.Row("/" + str(self.num_entries), width=int(self.width/6))
+        self.image_count = pn.Row(f"/{str(self.num_entries)}", width=int(self.width/6))
         self.gui_image_selection_controlls[2] = self.image_count
         self.index_mapping = data.reset_index(drop=True)
 
@@ -176,12 +176,18 @@ class DatasetOverview(Dashboard):
         super().__init__(height=height, width=width)
 
     def _generate_dataset_tab(self):
-        overview_table = table_from_dataframe(getattr(self.dataset, self.DESCRIPTOR_DATA), width=self.width, height=self.height)
-        return overview_table
+        return table_from_dataframe(
+            getattr(self.dataset, self.DESCRIPTOR_DATA),
+            width=self.width,
+            height=self.height,
+        )
 
     def _generate_datset_stats_tab(self):
-        overview_table = table_from_dataframe(getattr(self.dataset, self.DESCRIPTOR_STATS), width=self.width, height=self.height)
-        return overview_table
+        return table_from_dataframe(
+            getattr(self.dataset, self.DESCRIPTOR_STATS),
+            width=self.width,
+            height=self.height,
+        )
 
     def build_gui(self):
         dataset_tab = self._generate_dataset_tab()
@@ -300,10 +306,9 @@ class DatasetFilter(Dashboard, ABC):
     def update_plots(self, event, old=None, new=None):
         if self.UPDATING:
             return
-        else:
-            self.UPDATING = True
-            self._update_plots(event)
-            self.UPDATING = False
+        self.UPDATING = True
+        self._update_plots(event)
+        self.UPDATING = False
 
     def show(self):
         return self.gui

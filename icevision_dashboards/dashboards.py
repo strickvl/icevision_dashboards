@@ -151,7 +151,14 @@ class ObjectDetectionDatasetComparison(DatasetComparison):
         class_occurances_index = [np.array(dataset.data.groupby("label").count()["id"].index) for dataset in self.datasets]
         class_occurance_barplot = barplot(counts=class_occurances_values, values=class_occurances_index, bar_type="vertical", height=(self.height//5)*2, width=floor(self.width/2))
 
-        dublication_data = {dataset.name if dataset.name is not None else "Dataset_"+str(index): [getattr(dataset, self.DESCRIPTOR_DATA).duplicated().sum()] for index, dataset in enumerate(self.datasets)}
+        dublication_data = {
+            dataset.name
+            if dataset.name is not None
+            else f"Dataset_{str(index)}": [
+                getattr(dataset, self.DESCRIPTOR_DATA).duplicated().sum()
+            ]
+            for index, dataset in enumerate(self.datasets)
+        }
         dublication_data["All"] = pd.concat(self._get_descriptor_for_all_datasets(self.DESCRIPTOR_DATA)).duplicated().sum()
         dublication_df = pd.DataFrame(dublication_data)
         dublication_overview = table_from_dataframe(dublication_df)
@@ -316,7 +323,7 @@ class ObjectDetectionResultOverview(Dashboard):
     def precision_recall_plot_matplotlib(fig, data, iou, bottom, top, left, right):
         gs = fig.add_gridspec(nrows=4, ncols=1, left=left, right=right, bottom=bottom, top=top, hspace=0)
         ax1 = fig.add_subplot(gs[:3, :])
-        ax1.set_title("IOU: " + str(iou))
+        ax1.set_title(f"IOU: {str(iou)}")
         ax1.plot(data["recall"], data["precision"], label="Actual", color="black", lw=2)
         ax1.plot(data["ap11_recalls"], data["ap11_precisions"], label="AP11", color="green", lw=2)
         ax1.plot(data["monotonic_recalls"], data["monotonic_precisions"], label="Montonic", color="firebrick", lw=2)
@@ -347,7 +354,7 @@ class ObjectDetectionResultOverview(Dashboard):
         gs = fig.add_gridspec(nrows=1, ncols=1, left=left, right=right, bottom=bottom, top=top, hspace=0)
         ax = fig.add_subplot(gs[:, :])
         # ax.set_title(hist_key)
-        if not "scatter" in hist_key:
+        if "scatter" not in hist_key:
             if "normalized" in hist_key:
                 ax.hist(data[hist_key][0], bins=bins, range=(0,1))
             else:
@@ -498,7 +505,7 @@ class InstanceSegmentationResultOverview(ObjectDetectionResultOverview):
         gs = fig.add_gridspec(nrows=1, ncols=1, left=left, right=right, bottom=bottom, top=top, hspace=0)
         ax = fig.add_subplot(gs[:, :])
         # ax.set_title(hist_key)
-        if not "scatter" in hist_key:
+        if "scatter" not in hist_key:
             if "normalized" in hist_key:
                 ax.hist(data[hist_key][0], bins=bins, range=(0,1))
             else:

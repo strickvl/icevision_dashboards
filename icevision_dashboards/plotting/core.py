@@ -33,25 +33,17 @@ def barplot(counts: Union[np.ndarray, List[np.ndarray]], values: Union[np.ndarra
         for counts_element, values_element in zip(counts, values):
             values_element = [str(entry) for entry in values_element]
             if bar_type == "horizontal":
-                if len(plot_list) == 0:
+                if plot_list and linked_axis:
+                    p = figure(width=width, height=height, y_range=plot_list[0].y_range, x_range=plot_list[0].x_range)
+                else:
                     p = figure(width=width, height=height, y_range=values_element)
-                    p.hbar(y=values_element, left=0, right=counts_element, height=0.9)
-                else:
-                    if linked_axis:
-                        p = figure(width=width, height=height, y_range=plot_list[0].y_range, x_range=plot_list[0].x_range)
-                    else:
-                        p = figure(width=width, height=height, y_range=values_element)
-                    p.hbar(y=values_element, left=0, right=counts_element, height=0.9)
+                p.hbar(y=values_element, left=0, right=counts_element, height=0.9)
             elif bar_type == "vertical":
-                if len(plot_list) == 0:
-                    p = figure(width=width, height=height, x_range=values_element)
-                    p.vbar(x=values_element, bottom=0, top=counts_element, width=0.9)
+                if plot_list and linked_axis:
+                    p = figure(width=width, height=height, x_range=plot_list[0].x_range, y_range=plot_list[0].y_range)
                 else:
-                    if linked_axis:
-                        p = figure(width=width, height=height, x_range=plot_list[0].x_range, y_range=plot_list[0].y_range)
-                    else:
-                        p = figure(width=width, height=height, x_range=values_element)
-                    p.vbar(x=values_element, bottom=0, top=counts_element, width=0.9)
+                    p = figure(width=width, height=height, x_range=values_element)
+                p.vbar(x=values_element, bottom=0, top=counts_element, width=0.9)
             else:
                 raise ValueError("hist_type has to be of 'horizontal' or 'vertical'")
             plot_list.append(p)
@@ -97,7 +89,7 @@ def histogram(values: Union[np.ndarray, List[np.ndarray]], bins: int = 10, range
             x_labels, y_labels = y_labels, x_labels
         plot_list = []
         for values_element, plot_title, x_label, y_label in zip(values, title, x_labels, y_labels):
-            if len(plot_list) == 0 or linked_axis == False:
+            if not plot_list or linked_axis == False:
                 p = figure(width=width, height=height, title=plot_title, x_axis_label=x_label, y_axis_label=y_label)
             else:
                 p = figure(width=width, height=height, x_range=plot_list[0].x_range, y_range=plot_list[0].y_range, title=plot_title, x_axis_label=x_label, y_axis_label=y_label)
@@ -134,13 +126,49 @@ def heatmap(data: Union[pd.DataFrame, List[pd.DataFrame]], col_x: str, col_y: st
             df[col_y] = df[col_y].astype(str)
 
         if x_range is not None and y_range is not None:
-            p = figure(x_range=x_range, y_range=y_range, x_axis_location="above", tools="hover", toolbar_location=None, tooltips=[('', '@'+col_values)], width=width, height=height)
+            p = figure(
+                x_range=x_range,
+                y_range=y_range,
+                x_axis_location="above",
+                tools="hover",
+                toolbar_location=None,
+                tooltips=[('', f'@{col_values}')],
+                width=width,
+                height=height,
+            )
         elif x_range is not None and y_range is None:
-            p = figure(x_range=x_range, y_range=sorted(df[col_y].unique()), x_axis_location="above", tools="hover", toolbar_location=None, tooltips=[('', '@'+col_values)], width=width, height=height)
+            p = figure(
+                x_range=x_range,
+                y_range=sorted(df[col_y].unique()),
+                x_axis_location="above",
+                tools="hover",
+                toolbar_location=None,
+                tooltips=[('', f'@{col_values}')],
+                width=width,
+                height=height,
+            )
         elif x_range is None and y_range is not None:
-            p = figure(x_range=sorted(df[col_x].unique())[::-1], y_range=y_range, x_axis_location="above", tools="hover", toolbar_location=None, tooltips=[('', '@'+col_values)], width=width, height=height)
+            p = figure(
+                x_range=sorted(df[col_x].unique())[::-1],
+                y_range=y_range,
+                x_axis_location="above",
+                tools="hover",
+                toolbar_location=None,
+                tooltips=[('', f'@{col_values}')],
+                width=width,
+                height=height,
+            )
         else:
-            p = figure(x_range=sorted(df[col_x].unique())[::-1], y_range=sorted(df[col_y].unique()), x_axis_location="above", tools="hover", toolbar_location=None, tooltips=[('', '@'+col_values)], width=width, height=height)
+            p = figure(
+                x_range=sorted(df[col_x].unique())[::-1],
+                y_range=sorted(df[col_y].unique()),
+                x_axis_location="above",
+                tools="hover",
+                toolbar_location=None,
+                tooltips=[('', f'@{col_values}')],
+                width=width,
+                height=height,
+            )
 
         p.grid.grid_line_color = None
         p.axis.axis_line_color = None
@@ -238,7 +266,10 @@ def stacked_hist(data: Union[list, pd.DataFrame], x_col: str, stack_col: str, x_
             x_values = dataframe.groupby(stack_col).get_group(stack_value).groupby(x_col).count()
             data[str(stack_value)] = [float(x_values[x_values.index == i][stack_col].values) if i in x_values.index else 0 for i in sorted(dataframe[x_col].unique())]
         colors =  Category20[dataframe[stack_col].nunique()] if (2 < dataframe[stack_col].nunique() < 21) else viridis(dataframe[stack_col].nunique())
-        legend = [stack_col+": "+i for i in dataframe[stack_col].unique().astype(str).tolist()]
+        legend = [
+            f"{stack_col}: " + i
+            for i in dataframe[stack_col].unique().astype(str).tolist()
+        ]
 
         if x_range is None and y_range is None:
             p = figure(x_range=sorted(dataframe[x_col].unique().astype(str)), height=height, width=width, toolbar_location=None, tools="", tooltips="$name: @$name")
@@ -260,7 +291,7 @@ def stacked_hist(data: Union[list, pd.DataFrame], x_col: str, stack_col: str, x_
     elif isinstance(data, list):
         plot_list = []
         for df in data:
-            if link_plots and len(plot_list) > 0:
+            if link_plots and plot_list:
                 plot_list.append(_stacked_hist(df, x_col, stack_col, x_label, width, height, plot_list[0].x_range, plot_list[0].y_range))
             else:
                 plot_list.append(_stacked_hist(df, x_col, stack_col, x_label, width, height))

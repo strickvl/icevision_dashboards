@@ -41,9 +41,7 @@ def correct_mask(mask_array, pad_x, pad_y, width, height):
         corrected_mask_array=corrected_mask_array[:,round(pad_y/2):round(-pad_y/2),:]
     corrected_mask_array = np.array(Image.fromarray(corrected_mask_array[0,:,:]).resize([width, height], Image.NEAREST))
     corrected_mask_array = np.expand_dims(corrected_mask_array, 0)
-    # convert mask array to mask and get erles (only one erles exist!)
-    corrected_mask = MaskArray(corrected_mask_array)
-    return corrected_mask
+    return MaskArray(corrected_mask_array)
 
 # Cell
 def decorrect_mask(mask_array, pad_x, pad_y, width, height):
@@ -53,5 +51,4 @@ def decorrect_mask(mask_array, pad_x, pad_y, width, height):
     corrected_mask_array = np.expand_dims(corrected_mask_array, 0)
     # pad
     corrected_mask_array = np.pad(corrected_mask_array, [[0,0], [pad_y, pad_y], [pad_x, pad_x],])
-    corrected_mask = MaskArray(corrected_mask_array)
-    return corrected_mask
+    return MaskArray(corrected_mask_array)
